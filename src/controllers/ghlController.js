@@ -41,7 +41,6 @@ const fetchContactsFromGHL = async () => {
         });
 
         const contacts = response.data.contacts;
-
         for (const contact of contacts) {
             const {
                 id,
@@ -101,7 +100,6 @@ const fetchContactsFromGHL = async () => {
             }
             // Check if the contact already exists in the database
             const existingContact = await Contact.findOne({ email });
-console.log(ssn,"909090")
             if (existingContact) {
                 // Update the existing contact
                 existingContact.id = id;
@@ -130,8 +128,15 @@ console.log(ssn,"909090")
                 existingContact.customFields = customFieldsData;
 
                 // Save the updated contact to the database
-                await existingContact.save();
-                console.log(`Contact ${email} updated in the database.`);
+                try {
+                    await existingContact.save();
+                    console.log('All contacts fetched and updated successfully.');
+                    console.log(`✅ Contact ${email} updated successfully.`);
+                } catch (error) {
+                    console.error(`❌ Error updating contact ${email}:`, error);
+                }
+              
+              
             } else {
                 // Create a new contact document
                 const newContact = new Contact({
@@ -163,12 +168,19 @@ console.log(ssn,"909090")
                 });
 
                 // Save the new contact to the database
-                await newContact.save();
-                console.log(`Contact ${email} saved to database.`);
+                try {
+                    await newContact.save();
+                    console.log('All contacts fetched and updated successfully.');
+                    console.log(`✅ Contact ${email} updated successfully.`);
+                } catch (error) {
+                    console.error(`❌ Error updating contact ${email}:`, error);
+                }
+               
+               
             }
         }
 
-        console.log('All contacts fetched and updated successfully.');
+      
     } catch (error) {
         console.error('Error fetching contacts from Go High Level:', error.message);
     }
