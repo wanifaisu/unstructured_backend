@@ -4,7 +4,7 @@ const Contact = require('../models/Contact'); // Import your Mongoose model
 const router = express.Router();
 
 // Webhook endpoint for GHL
-router.post('/ghl-contacts', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const data = req.body;
 

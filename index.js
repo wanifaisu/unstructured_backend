@@ -16,11 +16,11 @@ const app = express();
 
 app.use(express.json());
 
-// app.use('/api/users', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/ghl', ghlRoutes);
 app.use('/api/auth', authRoutes)
 app.use('/api/ghl-contacts', webhookRoutes);
-app.use("/users",userRoutes)
+
 app.get("/", (req, res) => {
     res.send("Server is running!");
   });
