@@ -5,7 +5,7 @@ const ContactSchema = new mongoose.Schema({
     id: {
         type: String,
      
-        unique: true,
+
     },
     locationId: {
         type: String,
