@@ -5,32 +5,20 @@ const router = express.Router();
 
 // Webhook endpoint for GHL
 router.post("/", async (req, res) => {
-    console.log("📥 Incoming Webhook Data:", JSON.stringify(req.body, null, 2));
-
     try {
-        const contacts = Array.isArray(req.body) ? req.body : [req.body]; // Ensure array format
-
+        const contacts = Array.isArray(req.body) ? req.body : [req.body];
         for (let data of contacts) {
-            console.log("📥 Processing Webhook Data:", JSON.stringify(data, null, 2));
-
-            const rawSSN = data["Social security Number"]; // Extract SSN
-
+            const rawSSN = data["Social security Number"]; 
             let hashedSSN = "";
             let ssnLastFourHash = "";
            
             if (rawSSN) {
                 const salt = await bcrypt.genSalt(10);
-
-                // Hash the full SSN
                 hashedSSN = await bcrypt.hash(rawSSN.toString(), salt);
-
-                // Extract last 4 digits **before hashing**
                 const lastFourSSN = rawSSN.toString().slice(-4);
                 ssnLastFourHash = await bcrypt.hash(lastFourSSN, salt);
             }
-            console.log("🔹 Hashed SSN:", hashedSSN,typeof rawSSN);
-            console.log("🔹 Hashed Last 4 SSN:", ssnLastFourHash);
-            // Prepare contact object
+         
             const contactData = {
                 contact_id: data.contact_id || "",
                 locationId: data.locationId || "",
@@ -39,8 +27,8 @@ router.post("/", async (req, res) => {
                 lastName: data.last_name || "",
                 companyName: data.companyName || "",
                 email: data.email,
-                ssn: hashedSSN || "", // Store full SSN hash
-                hashedFour: ssnLastFourHash || "", // Store last 4 SSN hash
+                ssn: hashedSSN || "", 
+                hashedFour: ssnLastFourHash || "", 
                 phone: data.phone || "",
                 dnd: data.dnd || false,
                 type: data.type || "",
@@ -61,15 +49,15 @@ router.post("/", async (req, res) => {
             };
 
             try {
-                // 🔍 Check if contact exists by email
+               
                 let existingContact = await Contact.findOne({ email: data.email });
 
                 if (existingContact) {
-                    // Update only changed fields
+                  
                     await Contact.updateOne({ email: data.email }, { $set: contactData });
                     console.log(`✅ Updated contact: ${data.email}`);
                 } else {
-                    // Create new contact
+                   
                     const newContact = new Contact(contactData);
                     await newContact.save();
                     console.log(`✅ New contact added: ${data.email}`);

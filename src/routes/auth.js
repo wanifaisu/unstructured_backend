@@ -2,30 +2,45 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const Contact = require('../models/Contact');
 const dotenv = require('dotenv');
+const moment = require('moment');
 
 dotenv.config();
 const router = express.Router();
 
 // Login endpoint
 router.post('/', async (req, res) => {
-    const { lastName, dob, ssn } = req.body;
+    const { lastName, dob, fourDigitSSN } = req.body;
+
     try {
-        // Find the contact by last name and DOB
-        const contact = await Contact.findOne({ lastName, dateOfBirth: dob });
+        if (!lastName || !dob || !fourDigitSSN) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+        const inputMonthYear = moment(dob, 'YYYY-MM-DD').format('MM-YYYY');
+        const contacts = await Contact.find({ lastName });
+
+        if (!contacts.length) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        const contact = contacts.find((c) => {
+            if (!c.dateOfBirth) return false; 
+            const contactMonthYear = moment(c.dateOfBirth).format('MM-YYYY');
+            return contactMonthYear === inputMonthYear;
+        });
+
         if (!contact) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
-
-        // Compare the provided SSN with the hashed SSN
-        const isMatch = await contact.compareSSN(ssn);
+        if (!contact.hashedFour) {
+            return res.status(400).json({ message: 'SSN not found' });
+        }
+        const isMatch = await contact.compareLastFour(fourDigitSSN);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
-
-        // Generate a JWT token (optional)
         const token = jwt.sign({ contactId: contact._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         res.status(200).json({ message: 'Login successful', token });
+
     } catch (error) {
         console.error('Error during login:', error.message);
         res.status(500).json({ message: 'Server error' });
