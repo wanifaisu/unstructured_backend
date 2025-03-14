@@ -67,7 +67,7 @@ const ContactSchema = new mongoose.Schema({
     },
     dateOfBirth: {
         type: Date,
-        required: true, // Ensure DOB is required for authentication
+        // required: true, // Ensure DOB is required for authentication
     },
     tags: {
         type: [String],
