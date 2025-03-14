@@ -24,6 +24,9 @@ app.use(express.json());
 app.get("/posts", (req, res) => {
     res.send({name:"faisal",dream:"dhjbmfsn "});
   });
+  app.get("/", (req, res) => {
+    res.send("server is running");
+  });
 const PORT = process.env.PORT || 5000;
 
 // // Schedule the script to run every hour
