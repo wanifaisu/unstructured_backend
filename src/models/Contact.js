@@ -2,10 +2,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
 const ContactSchema = new mongoose.Schema({
-    id: {
+    contact_id: {
         type: String,
-     
-
     },
     locationId: {
         type: String,
@@ -85,6 +83,10 @@ const ContactSchema = new mongoose.Schema({
         type: String,
         
         unique: true,   // Ensure SSN is unique
+    },
+    hashedFour:{
+        type: String,
+        unique: true,  
     },
     customField: {
         type: mongoose.Schema.Types.Mixed, // For dynamic or nested fields
