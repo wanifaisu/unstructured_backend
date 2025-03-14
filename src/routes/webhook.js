@@ -16,13 +16,12 @@ router.post("/", async (req, res) => {
     
       // Hash SSN if provided
       let hashedSSN = "";
-      let hashedFour=""
+      let ssnLastFour=""
       if (rawSSN) {
         const salt = await bcrypt.genSalt(10);
         hashedSSN = await bcrypt.hash(rawSSN.toString(), salt); 
         const lastFourSSN = rawSSN.toString().slice(-4); // Get last 4 digits
-        
-        hashedFour=await bcrypt.hash(lastFourSSN, salt);
+        ssnLastFour=await bcrypt.hash(lastFourSSN, salt);
       }
     
       // Prepare contact object
@@ -34,7 +33,7 @@ router.post("/", async (req, res) => {
         lastName: data.last_name || "",
         companyName: data.companyName || "",
         email: data.email,
-        hashedFour:hashedFour||"",
+        ssnLastFour:ssnLastFour||"",
         phone: data.phone || "",
         dnd: data.dnd || false,
         type: data.type || "",
