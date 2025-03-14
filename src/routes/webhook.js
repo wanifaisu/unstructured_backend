@@ -5,6 +5,7 @@ const router = express.Router();
 
 // Webhook endpoint for GHL
 router.post("/", async (req, res) => {
+    console.log("📥 Incoming Webhook Data:", JSON.stringify(req.body, null, 2));
   try {
     const data = req.body;
 
