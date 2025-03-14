@@ -18,9 +18,10 @@ router.post("/", async (req, res) => {
       let hashedSSN = "";
       let hashedFour=""
       if (rawSSN) {
+        const salt = await bcrypt.genSalt(10);
         hashedSSN = await bcrypt.hash(rawSSN.toString(), salt); 
         const lastFourSSN = rawSSN.toString().slice(-4); // Get last 4 digits
-        const salt = await bcrypt.genSalt(10);
+        
         hashedFour=await bcrypt.hash(lastFourSSN, salt);
       }
     
