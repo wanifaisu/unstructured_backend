@@ -1,12 +1,12 @@
 const express = require("express");
-const dotenv = require("dotenv");
-const connectDB = require("./src/config/db");
-const ghlRoutes = require("./src/routes/ghlRoutes");
-const authRoutes = require("./src/routes/auth");
-const webhookRoutes = require("./src/routes/webhook");
+// const dotenv = require("dotenv");
+// const connectDB = require("./src/config/db");
+// const ghlRoutes = require("./src/routes/ghlRoutes");
+// const authRoutes = require("./src/routes/auth");
+// const webhookRoutes = require("./src/routes/webhook");
 
-dotenv.config();
-connectDB();
+// dotenv.config();
+// connectDB();
 
 const app = express();
 app.use(express.json());
