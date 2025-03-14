@@ -28,8 +28,8 @@ router.post("/", async (req, res) => {
                 const lastFourSSN = rawSSN.toString().slice(-4);
                 ssnLastFourHash = await bcrypt.hash(lastFourSSN, salt);
             }
-            console.log("🔹 Hashed SSN:", hashedSSN);
-            console.log("🔹 Hashed Last 4 SSN:", ssnLastFour);
+            console.log("🔹 Hashed SSN:", hashedSSN,typeof rawSSN);
+            console.log("🔹 Hashed Last 4 SSN:", ssnLastFourHash);
             // Prepare contact object
             const contactData = {
                 contact_id: data.contact_id || "",
