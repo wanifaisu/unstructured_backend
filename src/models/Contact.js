@@ -9,7 +9,7 @@ const ContactSchema = new mongoose.Schema({
     },
     locationId: {
         type: String,
-        required: true,
+      
     },
     contactName: {
         type: String,
@@ -67,7 +67,7 @@ const ContactSchema = new mongoose.Schema({
     },
     dateOfBirth: {
         type: Date,
-        // required: true, // Ensure DOB is required for authentication
+        
     },
     tags: {
         type: [String],
@@ -83,7 +83,7 @@ const ContactSchema = new mongoose.Schema({
     },
     ssn: {
         type: String,
-        required: true, // Ensure SSN is required for authentication
+        
         unique: true,   // Ensure SSN is unique
     },
     customField: {

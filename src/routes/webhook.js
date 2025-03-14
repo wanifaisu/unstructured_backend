@@ -4,74 +4,70 @@ const Contact = require('../models/Contact'); // Import your Mongoose model
 const router = express.Router();
 
 // Webhook endpoint for GHL
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
     try {
-        const data = req.body;
-
-        // Validate required fields
-        if (!data.email || !data.lastName) {
-            return res.status(400).json({ message: 'Missing required fields' });
-        }
-
-        // Extract last 4 digits of SSN
-        const ssnLast4 = data?.ssn?.slice(-4);
-
-        // Check if contact already exists
-        let contact = await Contact.findOne({ email: data.email });
-
-        if (contact) {
-            // Update the existing contact
-            contact.locationId = data.locationId || contact.locationId;
-            contact.firstName = data.firstName || contact.firstName;
-            contact.lastName = data.lastName || contact.lastName;
-            contact.phone = data.phone || contact.phone;
-            contact.dateOfBirth = new Date(data.dateOfBirth) || contact.dateOfBirth;
-            contact.ssn = data.ssn; // Assuming SSN is stored securely
-            contact.ssnLast4 = ssnLast4;
-            contact.city = data.city || contact.city;
-            contact.state = data.state || contact.state;
-            contact.postalCode = data.postalCode || contact.postalCode;
-            contact.address1 = data.address1 || contact.address1;
-            contact.country = data.country || contact.country;
-            contact.companyName = data.companyName || contact.companyName;
-            contact.tags = data.tags || contact.tags;
-            contact.website = data.website || contact.website;
-            contact.dateUpdated = new Date();
-
-            await contact.save();
-        
-        } else {
-            // Create a new contact
-            contact = new Contact({
-                locationId: data.locationId || '',
-                firstName: data.firstName || '',
-                lastName: data.lastName,
-                email: data.email,
-                phone: data.phone || '',
-                dateOfBirth: new Date(data.dateOfBirth),
-                ssn: data.ssn,
-                ssnLast4: ssnLast4,
-                city: data.city || '',
-                state: data.state || '',
-                postalCode: data.postalCode || '',
-                address1: data.address1 || '',
-                country: data.country || '',
-                companyName: data.companyName || '',
-                tags: data.tags || [],
-                website: data.website || '',
-                dateAdded: new Date(),
-                dateUpdated: new Date(),
-            });
-
-            await contact.save();
-            console.log(`✅ Contact ${data.email} saved.`);
-        }
-
-        res.status(200).json({ message: 'Webhook processed successfully' });
+      const data = req.body;
+  console.log(data,"7899")
+      // Check if required fields are present
+      if (!data.email) {
+        return res.status(400).json({ success: false, message: "Email is required" });
+      }
+  
+      // Hash SSN if it's provided
+      let hashedSSN = "";
+      if (data.ssn) {
+        const salt = await bcrypt.genSalt(10);
+        hashedSSN = await bcrypt.hash(data.ssn, salt);
+      }
+  
+      // Prepare the contact object
+      const contactData = {
+        id: data.id || "",
+        locationId: data.locationId || "",
+        contactName: data.contactName || "",
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        companyName: data.companyName || "",
+        email: data.email,
+        phone: data.phone || "",
+        dnd: data.dnd || false,
+        type: data.type || "",
+        source: data.source || "",
+        assignedTo: data.assignedTo || "",
+        city: data.city || "",
+        state: data.state || "",
+        postalCode: data.postalCode || "",
+        address1: data.address1 || "",
+        dateAdded: data.dateAdded || new Date(),
+        dateUpdated: new Date(),
+        dateOfBirth: data.dateOfBirth || null,
+        tags: data.tags || [],
+        country: data.country || "",
+        website: data.website || "",
+        timezone: data.timezone || "",
+        ssn: hashedSSN || "",
+        customField: data.customField || {},
+      };
+  
+      // Check if contact exists by email
+      let existingContact = await Contact.findOne({ email: data.email });
+  
+      if (existingContact) {
+        // Update only the fields provided in the webhook payload
+        await Contact.updateOne({ email: data.email }, { $set: contactData });
+        console.log(`✅ Updated contact: ${data.email}`);
+        return res.status(200).json({ success: true, message: "Contact updated successfully" });
+      } else {
+        // Create a new contact
+        const newContact = new Contact(contactData);
+        await newContact.save();
+        console.log(`✅ New contact added: ${data.email}`);
+        return res.status(201).json({ success: true, message: "Contact created successfully" });
+      }
     } catch (error) {
-        console.error('❌ Webhook processing error:', error.message);
-        res.status(500).json({ message: 'Server error' });
+      console.error("❌ Error processing webhook:", error);
+      return res.status(500).json({ success: false, message: "Server error" });
     }
-});
+  });
 
 module.exports = router;
