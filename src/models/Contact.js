@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const ContactSchema = new mongoose.Schema({
     id: {
         type: String,
-        required: true,
+     
         unique: true,
     },
     locationId: {
@@ -16,11 +16,11 @@ const ContactSchema = new mongoose.Schema({
     },
     firstName: {
         type: String,
-        required: true,
+      
     },
     lastName: {
         type: String,
-        required: true,
+       
     },
     companyName: {
         type: String,
