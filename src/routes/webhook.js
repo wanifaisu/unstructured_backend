@@ -66,7 +66,7 @@ router.post("/", async (req, res) => {
       }
     } catch (error) {
       console.error("❌ Error processing webhook:", error);
-      return res.status(500).json({ success: false, message: "Server error" });
+      return res.status(500).json({ success: false, message: "Server error",error:error });
     }
   });
 
