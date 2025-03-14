@@ -7,7 +7,6 @@ const router = express.Router();
 router.post("/", async (req, res) => {
     try {
       const data = req.body;
-  console.log(data,"7899")
       // Check if required fields are present
       if (!data.email) {
         return res.status(400).json({ success: false, message: "Email is required" });
@@ -66,7 +65,7 @@ router.post("/", async (req, res) => {
       }
     } catch (error) {
       console.error("❌ Error processing webhook:", error);
-      return res.status(500).json({ success: false, message: "Server error",error:error });
+      return res.status(500).json({ success: false, message: "Server error",error:error ,res:req.body});
     }
   });
 
