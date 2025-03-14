@@ -1,12 +1,12 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-const userRoutes = require('./routes/userRoutes');
-const ghlRoutes = require('./routes/ghlRoutes');
-const authRoutes=require('./routes/auth')
-const webhookRoutes=require("./routes/webhook")
+const connectDB = require('./src/config/db');
+const userRoutes = require('./src/routes/userRoutes');
+const ghlRoutes = require('./src/routes/ghlRoutes');
+const authRoutes=require('./src/routes/auth')
+const webhookRoutes=require("./src/routes/webhook")
 const cron = require('node-cron'); // Add this line
-const { fetchContactsFromGHL } = require('./controllers/ghlController'); // Add this line
+const { fetchContactsFromGHL } = require('./src/controllers/ghlController'); // Add this line
 
 dotenv.config();
 
