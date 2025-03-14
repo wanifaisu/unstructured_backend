@@ -15,16 +15,7 @@ connectDB();
 const app = express();
 
 app.use(express.json());
-const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI);
-        res.send("db is connected");
-    } catch (err) {
-        console.error('MongoDB connection error:', err.message);
-        res.send("error ");
-        process.exit(1);
-    }
-};
+
 app.use('/api/users', userRoutes);
 app.use('/api/ghl', ghlRoutes);
 app.use('/api/auth', authRoutes)
