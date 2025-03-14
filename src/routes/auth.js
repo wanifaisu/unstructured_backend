@@ -9,7 +9,6 @@ const router = express.Router();
 // Login endpoint
 router.post('/', async (req, res) => {
     const { lastName, dob, ssn } = req.body;
-
     try {
         // Find the contact by last name and DOB
         const contact = await Contact.findOne({ lastName, dateOfBirth: dob });
