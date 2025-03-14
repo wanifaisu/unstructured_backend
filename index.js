@@ -1,7 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./src/config/db');
-const userRoutes = require('./src/routes/userRoutes');
+const userRoutes = require('./src/routes/user');
 const ghlRoutes = require('./src/routes/ghlRoutes');
 const authRoutes=require('./src/routes/auth')
 const webhookRoutes=require("./src/routes/webhook")
@@ -20,12 +20,12 @@ app.use(express.json());
 app.use('/api/ghl', ghlRoutes);
 app.use('/api/auth', authRoutes)
 app.use('/api/ghl-contacts', webhookRoutes);
-
-app.get("/posts", (req, res) => {
-    res.send({name:"faisal",dream:"dhjbmfsn "});
+app.use("/users",userRoutes)
+app.get("/", (req, res) => {
+    res.send("Server is running!");
   });
-  app.get("/", (req, res) => {
-    res.send("server is running");
+  app.get("/posts", (req, res) => {
+    res.send({name:"nm snmd "});
   });
 const PORT = process.env.PORT || 5000;
 
