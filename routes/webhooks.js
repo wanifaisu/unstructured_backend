@@ -10,7 +10,7 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   try {
     const contacts = Array.isArray(req.body) ? req.body : [req.body];
-
+    console.log(JSON.stringify(req.body, "yuiop"));
     for (let data of contacts) {
       const rawSSN = data["Social security Number"];
       let hashedSSN = "";
@@ -22,8 +22,6 @@ router.post("/", async (req, res) => {
         const lastFourSSN = rawSSN.toString().slice(-4);
         ssnLastFourHash = await encryptSSN(lastFourSSN);
       }
-      //ndm d,m dm,d nfm mffm mf fm m fdhsnmsn
-      // jknfkn
 
       const contactData = {
         contact_id: data.contact_id || "",
