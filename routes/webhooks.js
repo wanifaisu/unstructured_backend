@@ -3,6 +3,7 @@ const express = require("express");
 const db = require("../db"); // Import MySQL connection
 const bcrypt = require("bcrypt"); // For hashing SSNs
 const moment = require("moment");
+const { encryptSSN } = require("../helpers");
 const router = express.Router();
 
 // Webhook endpoint for GHL
