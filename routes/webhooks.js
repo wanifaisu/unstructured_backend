@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   try {
     const contacts = Array.isArray(req.body) ? req.body : [req.body];
-
+    console.log("Received webhook data:", JSON.stringify(req.body, null, 2));
     for (let data of contacts) {
       const rawSSN = data["Social security Number"];
       let hashedSSN = "";
