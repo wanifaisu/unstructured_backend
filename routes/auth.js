@@ -1,5 +1,7 @@
+const express = require("express");
 const { decryptSSN } = require("../helpers");
-
+const db = require("../db");
+const router = express.Router();
 router.post("/", async (req, res) => {
   const { lastName, dob, fourDigitSSN } = req.body;
 
@@ -69,3 +71,4 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: "Server error", status: false });
   }
 });
+module.exports = router;
