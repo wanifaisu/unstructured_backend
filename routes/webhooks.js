@@ -22,6 +22,7 @@ router.post("/", async (req, res) => {
       }
       //ndm d,m dm,d nfm mffm mf fm m fdhsnmsn
       // jknfkn
+
       const contactData = {
         contact_id: data.contact_id || "",
         locationId: data.locationId || "",
@@ -39,9 +40,13 @@ router.post("/", async (req, res) => {
         state: data.state || "",
         postalCode: data.postalCode || "",
         address1: data.address1 || "",
-        dateAdded: data.date_created || new Date(),
-        dateUpdated: new Date(),
-        dateOfBirth: data.date_of_birth || null,
+        dateAdded: moment(data.date_created || new Date()).format(
+          "YYYY-MM-DD HH:mm:ss"
+        ),
+        dateUpdated: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        dateOfBirth: data.date_of_birth
+          ? moment(data.date_of_birth).format("YYYY-MM-DD")
+          : null,
         tags: JSON.stringify(data.tags || []), // Store tags as JSON
         country: data.country || "",
         website: data.website || "",
