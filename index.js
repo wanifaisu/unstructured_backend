@@ -1,8 +1,12 @@
 // index.js
 const express = require("express");
+require("dotenv").config();
 const webhookRoutes = require("./routes/webhooks"); // Import webhook routes
 const authRoute = require("./routes/auth");
 const userRoutes = require("./routes/users");
+const { encryptSSN, decryptSSN } = require("./helpers");
+
+console.log("Loaded SECRET_KEY:", process.env.PUBLIC_KEY);
 const app = express();
 app.use(express.json());
 
@@ -15,9 +19,9 @@ app.use("/api/update_userDetails", userRoutes);
 app.get("/", (req, res) => {
   res.send("Welcome to the API!");
 });
-
 // Start the server
 const PORT = 3000;
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

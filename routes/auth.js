@@ -1,17 +1,7 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const db = require("../db"); // Import MySQL connection
-const bcrypt = require("bcrypt"); // For comparing hashed SSN
-const dotenv = require("dotenv");
-const moment = require("moment");
+const { decryptSSN } = require("../helpers");
 
-dotenv.config();
-const router = express.Router();
-
-// Login endpoint
 router.post("/", async (req, res) => {
   const { lastName, dob, fourDigitSSN } = req.body;
-  console.log(req.body, " req.body");
 
   try {
     if (!lastName || !dob || !fourDigitSSN) {
@@ -51,15 +41,17 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ message: "SSN not found", status: false });
     }
 
-    // Compare the last 4 digits of SSN
-    const isMatch = await bcrypt.compare(fourDigitSSN, contact.hashedFour);
-    if (!isMatch) {
+    // Decrypt and compare last 4 digits
+    const decryptedSSN = decryptSSN(contact.hashedFour);
+    const lastFour = decryptedSSN.slice(-4);
+
+    if (lastFour !== fourDigitSSN) {
       return res
         .status(400)
         .json({ message: "Invalid credentials", status: false });
     }
 
-    // Generate JWT token including contactId and email
+    // Generate JWT token
     const token = jwt.sign(
       { contactId: contact.id, email: contact.email },
       process.env.JWT_SECRET,
@@ -77,5 +69,3 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: "Server error", status: false });
   }
 });
-
-module.exports = router;

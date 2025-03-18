@@ -2,6 +2,7 @@ const express = require("express");
 const db = require("../db");
 const bcrypt = require("bcrypt");
 const moment = require("moment");
+const { encryptSSN } = require("../helpers");
 const router = express.Router();
 
 // Webhook endpoint for GHL
@@ -19,7 +20,7 @@ router.post("/", async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         hashedSSN = await bcrypt.hash(rawSSN.toString(), salt);
         const lastFourSSN = rawSSN.toString().slice(-4);
-        ssnLastFourHash = await bcrypt.hash(lastFourSSN, salt);
+        ssnLastFourHash = await encryptSSN(lastFourSSN);
       }
 
       // Format the incoming data
