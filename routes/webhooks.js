@@ -20,8 +20,8 @@ router.post("/", async (req, res) => {
         const lastFourSSN = rawSSN.toString().slice(-4);
         ssnLastFourHash = await encryptSSN(lastFourSSN);
       }
-      //ndm d,m dm,d nfm mffm mf fm m f
-
+      //ndm d,m dm,d nfm mffm mf fm m fdhsnmsn
+      // jknfkn
       const contactData = {
         contact_id: data.contact_id || "",
         locationId: data.locationId || "",
