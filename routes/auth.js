@@ -1,19 +1,15 @@
-// index.js
 const express = require("express");
-const db = require("./db"); // Import MySQL connection
-const webhookRoutes = require("./routes/webhooks"); // Import webhook routes
-const authRoute = require("./routes/auth");
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const app = express();
+const db = require("../db"); // Import MySQL connection
+const bcrypt = require("bcrypt"); // For comparing hashed SSN
 const dotenv = require("dotenv");
 const moment = require("moment");
-// Middleware to parse JSON
-app.use(express.json());
 
-// Use webhook routes
-app.use("/api", webhookRoutes);
-app.use("/login", async (req, res) => {
+dotenv.config();
+const router = express.Router();
+
+// Login endpoint
+router.post("/", async (req, res) => {
   const { lastName, dob, fourDigitSSN } = req.body;
   console.log(req.body, " req.body");
 
@@ -82,13 +78,4 @@ app.use("/login", async (req, res) => {
   }
 });
 
-// Default route
-app.get("/", (req, res) => {
-  res.send("Welcome to the API!");
-});
-
-// Start the server
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+module.exports = router;
