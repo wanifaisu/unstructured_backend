@@ -1,7 +1,7 @@
-// routes/webhookRoutes.js
 const express = require("express");
 const db = require("../db"); // Import MySQL connection
 const bcrypt = require("bcrypt"); // For hashing SSNs
+const moment = require("moment"); // Import moment.js for date formatting
 const router = express.Router();
 
 // Webhook endpoint for GHL
@@ -9,6 +9,7 @@ router.post("/", async (req, res) => {
   try {
     const contacts = Array.isArray(req.body) ? req.body : [req.body];
     console.log("Received webhook data:", JSON.stringify(req.body, null, 2));
+
     for (let data of contacts) {
       const rawSSN = data["Social security Number"];
       let hashedSSN = "";
@@ -38,9 +39,13 @@ router.post("/", async (req, res) => {
         state: data.state || "",
         postalCode: data.postalCode || "",
         address1: data.address1 || "",
-        dateAdded: data.date_created || new Date(),
-        dateUpdated: new Date(),
-        dateOfBirth: data.date_of_birth || null,
+        dateAdded: moment(data.date_created || new Date()).format(
+          "YYYY-MM-DD HH:mm:ss"
+        ), // Fixing datetime format
+        dateUpdated: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        dateOfBirth: data.date_of_birth
+          ? moment(data.date_of_birth).format("YYYY-MM-DD")
+          : null, // Formatting birthdate
         tags: JSON.stringify(data.tags || []), // Store tags as JSON
         country: data.country || "",
         website: data.website || "",
@@ -49,6 +54,8 @@ router.post("/", async (req, res) => {
         hashedFour: ssnLastFourHash || "",
         customField: JSON.stringify(data.customField || {}), // Store customField as JSON
       };
+
+      console.log("Formatted Data to Insert:", contactData);
 
       try {
         // Check if the contact already exists
@@ -107,6 +114,7 @@ router.post("/", async (req, res) => {
                             dateOfBirth, tags, country, website, timezone, ssn,
                             hashedFour, customField
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+
             [
               contactData.contact_id,
               contactData.locationId,
