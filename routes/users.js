@@ -28,7 +28,7 @@ router.get("/:contact_id", async (req, res) => {
         .status(404)
         .json({ success: false, message: "User not found" });
     }
-
+    console.log(contact[0], "contact[0]");
     res.status(200).json({ success: true, data: contact[0] });
   } catch (error) {
     console.error("❌ Error fetching user:", error);

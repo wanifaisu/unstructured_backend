@@ -18,3 +18,25 @@ pool.getConnection((err, connection) => {
   }
 });
 module.exports = pool.promise();
+
+// const mysql = require("mysql2");
+
+// const pool = mysql.createPool({
+//   host: "localhost",
+//   user: "root",
+//   password: "Mike@155223",
+//   database: "mysqlUnstructured",
+//   port: 3306,
+//   connectionLimit: 10,
+// });
+
+// pool.getConnection((err, connection) => {
+//   if (err) {
+//     console.error("❌ Error connecting to MySQL:", err);
+//   } else {
+//     console.log("✅ Connected to Local MySQL database");
+//     connection.release();
+//   }
+// });
+
+// module.exports = pool.promise();
