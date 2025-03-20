@@ -1,6 +1,8 @@
 const express = require("express");
 const verifyToken = require("../authMiddleware");
 const { default: axios } = require("axios");
+const bcrypt = require("bcrypt");
+const moment = require("moment");
 const mysql = require("../db");
 const router = express.Router();
 
@@ -39,10 +41,22 @@ router.get("/:contact_id", async (req, res) => {
 });
 
 // PUT: Update contact
-// UPDATE User Route
-router.put("/", verifyToken, async (req, res) => {
+
+router.put("/", async (req, res) => {
   try {
-    const { contact_id, firstName, lastName, email, phone } = req.body;
+    const {
+      contact_id,
+      firstName,
+      lastName,
+      email,
+      phone,
+      address1,
+      city,
+      state,
+      country,
+      postalCode,
+      hashedFour,
+    } = req.body;
 
     if (!contact_id) {
       return res
@@ -50,53 +64,91 @@ router.put("/", verifyToken, async (req, res) => {
         .json({ message: "Missing contact_id", status: false });
     }
 
-    // ✅ Update User in MySQL
-    const updateSql = `UPDATE contacts SET firstName = ?, lastName = ?, email = ?, phone = ? WHERE contact_id = ?`;
-
-    const [result] = await mysql.query(updateSql, [
+    let encryptedHashedFour = null;
+    if (hashedFour) {
+      const salt = await bcrypt.genSalt(10);
+      encryptedHashedFour = await bcrypt.hash(hashedFour.toString(), salt);
+    }
+    const updateFields = [
       firstName,
       lastName,
       email,
       phone,
+      postalCode,
+      address1,
+      city,
+      state,
+      country,
+      encryptedHashedFour,
       contact_id,
-    ]);
+    ];
+
+    // Update query
+    const updateSql = `
+      UPDATE contacts 
+      SET firstName = ?, lastName = ?, email = ?, phone = ?, postalCode = ?, address1 = ?, city = ?, state = ?, country = ?, hashedFour = ?
+      WHERE contact_id = ?;
+    `;
+
+    // Execute MySQL query
+    const [result] = await mysql.query(updateSql, updateFields);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "User not found", status: false });
     }
 
-    // ✅ Update User in GHL API
-    const GHL_API_URL = `https://rest.gohighlevel.com/v1/contacts/${contact_id}`;
-
+    // Update in GHL API
+    const GHL_API_URL = `${process.env.GHL_URL}/${contact_id}`;
     try {
       const ghlResponse = await axios.put(
         GHL_API_URL,
-        { firstName, lastName, email, phone },
+        {
+          firstName,
+          lastName,
+          email,
+          phone,
+          address1,
+          city,
+          state,
+          country,
+          postalCode,
+        }, // Added state & country
         {
           headers: {
-            Authorization: `Bearer ${process.env.GHL_API_KEY}`, // Ensure GHL API key is in .env
+            Authorization: `Bearer ${process.env.GHL_API_KEY}`,
             "Content-Type": "application/json",
           },
         }
       );
 
-      res.json({
+      return res.json({
         message: "User updated successfully",
-        user: { contact_id, firstName, lastName, email, phone },
+        user: {
+          contact_id,
+          firstName,
+          lastName,
+          email,
+          phone,
+          address1,
+          city,
+          state, // Added state
+          country, // Added country
+          postalCode,
+        },
         ghlResponse: ghlResponse.data,
         status: true,
       });
     } catch (ghlErr) {
       console.error("GHL API Error:", ghlErr.response?.data || ghlErr.message);
-      res.status(500).json({
+      return res.status(500).json({
         message: "GHL API error",
-        error: ghlErr.message,
+        error: ghlErr.response?.data || ghlErr.message,
         status: false,
       });
     }
   } catch (err) {
-    console.error("Server Error:", err);
-    res
+    console.error("Server Error:", err.message);
+    return res
       .status(500)
       .json({ message: "Server error", error: err.message, status: false });
   }

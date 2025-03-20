@@ -12,10 +12,8 @@ app.use(express.json());
 const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5173",
-  "http://unifistruct.structuredsettlement.agency",
-  "https://your-frontend-app.onrender.com", // Add your frontend URL here
+  // "http://unifistruct.structuredsettlement.agency",
 ];
-
 app.use(
   cors({
     origin: function (origin, callback) {
