@@ -66,12 +66,6 @@ router.post("/", async (req, res) => {
     if (!contact.hashedFour) {
       return res.status(400).json({ message: "SSN not found", status: false });
     }
-    console.log(
-      decryptSSN(
-        "7516ce0b555acdbe7af6825cc5e01e0c:ba325450:e966c276126fcbacf52b6b3c77551fe8"
-      ),
-      "-----"
-    );
     // Decrypt the SSN and compare it with the input
     let decryptedSSN;
     try {

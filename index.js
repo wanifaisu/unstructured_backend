@@ -5,6 +5,8 @@ const cors = require("cors");
 require("dotenv").config();
 const userRoutes = require("./routes/users");
 const accountsRoutes = require("./routes/accounts");
+const OffersRoute = require("./routes/offers");
+const paymentRoute = require("./routes/payments");
 const app = express();
 app.use(express.json());
 
@@ -33,12 +35,13 @@ app.use("/api/user_account", accountsRoutes);
 app.use("/api/login", authRoute);
 app.use("/api/user_details", userRoutes);
 app.use("/api/update_userDetails", userRoutes);
+app.use("/api/process-payment", paymentRoute);
+app.use("/api/contact_offers", OffersRoute);
 
 // Default route
 app.get("/", async (req, res) => {
   res.send("Welcome to the API!");
 });
-
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -292,6 +292,79 @@ router.post("/", async (req, res) => {
             }
           }
         }
+
+        // Add this after the account processing logic
+        for (const key in data) {
+          const match = key.match(/^Lender (\d+)$/); // Regex to capture offer index
+          if (match) {
+            const index = match[1]; // Extract the number (1, 2, 3, ...)
+            const lender = data[`Lender ${index}`];
+
+            if (lender) {
+              const offerData = {
+                contact_id: contactData.contact_id,
+                account_related_id: index, // Add account_related_id (e.g., 1, 2, 3, ...)
+                lender: lender,
+                total_debt_amount: validateAndSanitizeNumber(
+                  data[`Total Debt Amount ${index}`]
+                ),
+                settlement_amount: validateAndSanitizeNumber(
+                  data[`Settlement Amount ${index}`]
+                ),
+                settlement_percentage: validateAndSanitizeNumber(
+                  data[`Settlement Percentage % ${index}`]
+                ),
+              };
+
+              // Check if offer already exists
+              const [existingOffer] = await db.query(
+                "SELECT * FROM Offers WHERE contact_id = ? AND account_related_id = ?",
+                [contactData.contact_id, index]
+              );
+
+              if (existingOffer.length > 0) {
+                // Update existing offer
+                await db.query(
+                  `UPDATE Offers 
+                   SET 
+                     lender = ?, 
+                     total_debt_amount = ?, 
+                     settlement_amount = ?, 
+                     settlement_percentage = ?
+                   WHERE contact_id = ? AND account_related_id = ?`,
+                  [
+                    offerData.lender,
+                    offerData.total_debt_amount,
+                    offerData.settlement_amount,
+                    offerData.settlement_percentage,
+                    contactData.contact_id,
+                    index, // Use account_related_id for the WHERE clause
+                  ]
+                );
+              } else {
+                // Insert new offer
+                await db.query(
+                  `INSERT INTO Offers (
+                     contact_id, 
+                     account_related_id, 
+                     lender, 
+                     total_debt_amount, 
+                     settlement_amount, 
+                     settlement_percentage
+                   ) VALUES (?, ?, ?, ?, ?, ?)`,
+                  [
+                    offerData.contact_id,
+                    offerData.account_related_id,
+                    offerData.lender,
+                    offerData.total_debt_amount,
+                    offerData.settlement_amount,
+                    offerData.settlement_percentage,
+                  ]
+                );
+              }
+            }
+          }
+        }
       } catch (error) {
         throw error;
       }
