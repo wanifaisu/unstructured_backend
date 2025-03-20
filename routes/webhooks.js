@@ -27,12 +27,8 @@ const validateAndSanitizeNumber = (value) => {
 router.post("/", async (req, res) => {
   try {
     const contacts = Array.isArray(req.body) ? req.body : [req.body];
-    console.log(
-      JSON.stringify(res, null, 2),
-      "Received webhook data:",
-      JSON.stringify(req.body, null, 2)
-    );
-
+    const payload = req.body;
+    console.log("Webhook Payload:", JSON.stringify(payload, null, 2));
     for (let data of contacts) {
       const rawSSN = data["Social security Number"];
       let hashedSSN = "";
@@ -77,9 +73,6 @@ router.post("/", async (req, res) => {
         hashedFour: ssnLastFourHash || "",
         customField: JSON.stringify(data.customField || {}), // Store customField as JSON
       };
-
-      console.log(contactData, "----------------");
-
       try {
         // Check if contact already exists
         const [existingContact] = await db.query(
@@ -144,7 +137,7 @@ router.post("/", async (req, res) => {
               contactData.ssn,
               contactData.hashedFour,
               contactData.customField,
-              contactData.email, // WHERE clause
+              contactData.email,
             ]
           );
         } else {
@@ -300,8 +293,7 @@ router.post("/", async (req, res) => {
           }
         }
       } catch (error) {
-        console.error("❌ Error processing contact or account:", error);
-        throw error; // Re-throw to be caught by the outer try-catch
+        throw error;
       }
     }
 
@@ -309,7 +301,6 @@ router.post("/", async (req, res) => {
       .status(200)
       .json({ success: true, message: "Webhook processed successfully" });
   } catch (error) {
-    console.error("❌ Error processing webhook:", error);
     res
       .status(500)
       .json({ success: false, message: "Server error", error: error.message });
