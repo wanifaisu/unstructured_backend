@@ -3,22 +3,24 @@ const db = require("../db"); // Import MySQL connection
 const bcrypt = require("bcrypt"); // For hashing SSNs
 const moment = require("moment");
 const { encryptSSN } = require("../helpers");
-const pdcflow = require("../paymentSignature");
-const logger = require("../logger");
 const router = express.Router();
 
+// Helper function to validate and format dates
 const validateAndFormatDate = (dateValue) => {
-  if (!dateValue) return null;
-  const date = moment(dateValue, moment.ISO_8601, true);
-  return date.isValid() ? date.format("YYYY-MM-DD") : null;
+  if (!dateValue) return null; // If the value is missing, return null
+  const date = moment(dateValue, moment.ISO_8601, true); // Parse the date strictly
+  return date.isValid() ? date.format("YYYY-MM-DD") : null; // Return formatted date or null if invalid
 };
+
+// Helper function to validate and sanitize numeric values
 const validateAndSanitizeNumber = (value) => {
-  if (typeof value === "number") return value;
+  if (typeof value === "number") return value; // If it's already a number, return it
   if (typeof value === "string") {
+    // Remove non-numeric characters (e.g., letters, symbols)
     const sanitizedValue = value.replace(/[^0-9.]/g, "");
-    return sanitizedValue ? parseFloat(sanitizedValue) : 0;
+    return sanitizedValue ? parseFloat(sanitizedValue) : 0; // Convert to number or return 0 if empty
   }
-  return 0;
+  return 0; // Default to 0 for invalid types
 };
 
 // Webhook endpoint for GHL
@@ -26,7 +28,6 @@ router.post("/", async (req, res) => {
   try {
     const contacts = Array.isArray(req.body) ? req.body : [req.body];
     const payload = req.body;
-    logger.info("Webhook Payload received:", payload);
     console.log("Webhook Payload:", JSON.stringify(payload, null, 2));
     for (let data of contacts) {
       const rawSSN = data["Social security Number"];
@@ -63,14 +64,14 @@ router.post("/", async (req, res) => {
           "YYYY-MM-DD HH:mm:ss"
         ),
         dateUpdated: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-        dateOfBirth: validateAndFormatDate(data.date_of_birth),
-        tags: JSON.stringify(data.tags || []),
+        dateOfBirth: validateAndFormatDate(data.date_of_birth), // Validate and format date
+        tags: JSON.stringify(data.tags || []), // Store tags as JSON
         country: data.country || "",
         website: data.website || "",
         timezone: data.timezone || "",
         ssn: hashedSSN || "",
         hashedFour: ssnLastFourHash || "",
-        customField: JSON.stringify(data.customField || {}),
+        customField: JSON.stringify(data.customField || {}), // Store customField as JSON
       };
       try {
         // Check if contact already exists
@@ -78,12 +79,7 @@ router.post("/", async (req, res) => {
           "SELECT * FROM contacts WHERE email = ?",
           [contactData.email]
         );
-        const result = await pdcflow.main({
-          firstName: contactData.firstName,
-          lastName: contactData.lastName,
-          email: contactData.email,
-          phone: contactData.phone,
-        });
+
         if (existingContact.length > 0) {
           // Update existing contact
           await db.query(
@@ -188,9 +184,9 @@ router.post("/", async (req, res) => {
 
         // Process account-related fields
         for (const key in data) {
-          const match = key.match(/^Account ID (\d+)$/);
+          const match = key.match(/^Account ID (\d+)$/); // Regex to capture account index
           if (match) {
-            const index = match[1];
+            const index = match[1]; // Extract the number (1, 2, 3, ...)
             const accountID = data[`Account ID ${index}`];
 
             if (accountID) {
@@ -199,10 +195,10 @@ router.post("/", async (req, res) => {
                 account_id: accountID,
                 date_first_default: validateAndFormatDate(
                   data[`Date of First Default ${index}`]
-                ),
+                ), // Validate and format date
                 date_origination: validateAndFormatDate(
                   data[`Date of Origination ${index}`]
-                ),
+                ), // Validate and format date
                 issuer: data[`Issuer ${index}`] || "",
                 issuer_account_id: data[`Issuer Account ID ${index}`] || "",
                 package: data[`Package ${index}`] || "",
@@ -214,14 +210,14 @@ router.post("/", async (req, res) => {
                 current_interest_due: validateAndSanitizeNumber(
                   data[`Current Interest Due ${index}`]
                 ), // Validate and sanitize number
-                fees: validateAndSanitizeNumber(data[`Fees ${index}`]),
+                fees: validateAndSanitizeNumber(data[`Fees ${index}`]), // Validate and sanitize number
                 amount_financed: validateAndSanitizeNumber(
                   data[`Amount Financed ${index}`]
-                ),
+                ), // Validate and sanitize number
                 principal: validateAndSanitizeNumber(
                   data[`Principal ${index}`]
                 ), // Validate and sanitize number
-                balance: validateAndSanitizeNumber(data[`Balance ${index}`]),
+                balance: validateAndSanitizeNumber(data[`Balance ${index}`]), // Validate and sanitize number
                 placement_package: data[`Placement Package ${index}`] || "",
                 last_payment_at_purchase: validateAndSanitizeNumber(
                   data[`Amount of Last Payment at Purchase ${index}`]

@@ -1,8 +1,0 @@
-[2025-03-26T20:18:39.891Z] Upload Successful
-HTTP 200
-{
-  "type": "PDF",
-  "documentId": 11016,
-  "documentName": "2025-03-26_14:18:40_Document"
-}
-
