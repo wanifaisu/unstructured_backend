@@ -270,9 +270,6 @@ router.post("/", async (req, res) => {
                 );
 
                 if (existingAccount.length > 0) {
-                  logger.info(
-                    `Account ID ${accountID} exists for Contact ID ${contactData.contact_id}, updating...`
-                  );
                   await db.query(
                     `UPDATE accounts 
                      SET date_first_default = ?, date_origination = ?, issuer = ?, issuer_account_id = ?, 
@@ -291,9 +288,6 @@ router.post("/", async (req, res) => {
                     ]
                   );
                 } else {
-                  logger.info(
-                    `Account ID ${accountID} does not exist, inserting for Contact ID ${contactData.contact_id}...`
-                  );
                   await db.query(
                     `INSERT INTO accounts (
                       contact_id, account_related_id, account_id, date_first_default, date_origination, issuer, 
@@ -307,9 +301,6 @@ router.post("/", async (req, res) => {
                   );
                 }
               } else {
-                logger.info(
-                  `No contact found for Contact ID ${contactData.contact_id}, inserting contact and account...`
-                );
                 await db.query(
                   `INSERT INTO accounts (
                     contact_id, account_related_id, account_id, date_first_default, date_origination, issuer, 
@@ -434,7 +425,6 @@ router.post("/", async (req, res) => {
       .status(200)
       .json({ success: true, message: "Webhook processed successfully" });
   } catch (error) {
-    logger.info(`Getting Error ${error.message}`);
     res
       .status(500)
       .json({ success: false, message: "Server error", error: error.message });
