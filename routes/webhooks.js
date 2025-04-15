@@ -69,7 +69,8 @@ router.post("/", async (req, res) => {
         timezone: data.timezone || "",
         ssn: hashedSSN || "",
         hashedFour: ssnLastFourHash || "",
-        customField: JSON.stringify(data.customField || {}),
+        customField: {},
+        // JSON.stringify(data.customField || {})
       };
       try {
         // Check if contact already exists
