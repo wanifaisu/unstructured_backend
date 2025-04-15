@@ -40,7 +40,7 @@ app.use("/api/contact_offers", OffersRoute);
 
 // Default route
 app.get("/", async (req, res) => {
-  res.send("Welcome to the API!");
+  res.send("Welcome to the API! new chnages ");
 });
 // Start the server
 const PORT = process.env.PORT || 3000;
