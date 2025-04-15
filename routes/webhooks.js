@@ -139,178 +139,242 @@ router.post("/", async (req, res) => {
         }
 
         // Process account-related fields
-        let accountRelatedIndex = 1;
 
         for (const key in data) {
           const match = key.match(/^Account ID (\d+)$/);
           if (match) {
-            const index = match[1];
-            // Check both direct property and customData for account ID
+            const accountIndex = parseInt(match[1]); // This should be 1, 2, 3, or 4
             const accountID =
-              data[`Account ID ${index}`] ||
-              (data.customData && data.customData[`Account ID ${index}`]);
+              data[`Account ID ${accountIndex}`] ||
+              (data.customData &&
+                data.customData[`Account ID ${accountIndex}`]);
 
             if (accountID) {
               console.log(
-                `Processing account ${accountID} for contact ${contactData.contact_id}`
+                `Processing account ${accountID} (index ${accountIndex}) for contact ${contactData.contact_id}`
               );
 
-              // First check if we already have an account_related_id for this account
-              const [existingAccountRelation] = await db.query(
-                "SELECT account_related_id FROM accounts WHERE contact_id = ? AND account_id = ?",
-                [contactData.contact_id, accountID]
+              // First check if an account with this index already exists for this contact
+              const [existingAccounts] = await db.query(
+                "SELECT account_id FROM accounts WHERE contact_id = ? AND account_index = ?",
+                [contactData.contact_id, accountIndex]
               );
 
-              // Use existing account_related_id if found, otherwise use the next index
-              const accountRelatedId =
-                existingAccountRelation.length > 0
-                  ? existingAccountRelation[0].account_related_id
-                  : accountRelatedIndex++;
-
+              // Prepare account data
               const accountData = {
-                contact_id: contactData.contact_id,
-                account_related_id: accountRelatedId,
                 account_id: accountID,
+                contact_id: contactData.contact_id,
+                account_index: accountIndex, // This must be unique per contact (1-4)
                 date_first_default: validateAndFormatDate(
-                  data[`Date of First Default ${index}`]
+                  data[`Date of First Default ${accountIndex}`]
                 ),
                 date_origination: validateAndFormatDate(
-                  data[`Date of Origination ${index}`]
+                  data[`Date of Origination ${accountIndex}`]
                 ),
-                issuer: data[`Issuer ${index}`] || "",
-                issuer_account_id: data[`Issuer Account ID ${index}`] || "",
-                package: data[`Package ${index}`] || "",
-                alternate_id: data[`Alternate ID ${index}`] || "",
-                state_of_origin: data[`State of Origin ${index}`] || "",
+                issuer: data[`Issuer ${accountIndex}`] || "",
+                issuer_account_id:
+                  data[`Issuer Account ID ${accountIndex}`] || "",
+                package: data[`Package ${accountIndex}`] || "",
+                alternate_id: data[`Alternate ID ${accountIndex}`] || "",
+                state_of_origin: data[`State of Origin ${accountIndex}`] || "",
                 date_charged_off: validateAndFormatDate(
-                  data[`Date Charged Off ${index}`]
+                  data[`Date Charged Off ${accountIndex}`]
                 ),
                 current_interest_due: validateAndSanitizeNumber(
-                  data[`Current Interest Due ${index}`] || 0
+                  data[`Current Interest Due ${accountIndex}`] || 0
                 ),
-                fees: validateAndSanitizeNumber(data[`Fees ${index}`] || 0),
+                fees: validateAndSanitizeNumber(
+                  data[`Fees ${accountIndex}`] || 0
+                ),
                 amount_financed: validateAndSanitizeNumber(
-                  data[`Amount Financed ${index}`] || 0
+                  data[`Amount Financed ${accountIndex}`] || 0
                 ),
                 principal: validateAndSanitizeNumber(
-                  data[`Principal ${index}`] || 0
+                  data[`Principal ${accountIndex}`] || 0
                 ),
                 balance: validateAndSanitizeNumber(
-                  data[`Balance ${index}`] || 0
+                  data[`Balance ${accountIndex}`] || 0
                 ),
-                placement_package: data[`Placement Package ${index}`] || "",
+                placement_package:
+                  data[`Placement Package ${accountIndex}`] || "",
                 last_payment_at_purchase: validateAndSanitizeNumber(
-                  data[`Amount of Last Payment at Purchase ${index}`] || 0
+                  data[`Amount of Last Payment at Purchase ${accountIndex}`] ||
+                    0
                 ),
                 date_last_payment_at_purchase: validateAndFormatDate(
-                  data[`Date of Last Payment at Purchase ${index}`]
+                  data[`Date of Last Payment at Purchase ${accountIndex}`]
                 ),
                 last_payment_amount: validateAndSanitizeNumber(
-                  data[`Amount of Last Payment ${index}`] || 0
+                  data[`Amount of Last Payment ${accountIndex}`] || 0
                 ),
                 date_last_payment: validateAndFormatDate(
-                  data[`Date of Last Payment ${index}`]
+                  data[`Date of Last Payment ${accountIndex}`]
                 ),
-                bank_name: data[`Bank Name ${index}`] || "",
-                bank_address: data[`Bank Address Line ${index}`] || "",
-                bank_city: data[`Bank City ${index}`] || "",
-                bank_state: data[`Bank State ${index}`] || "",
-                bank_zip: data[`Bank Zip Code ${index}`] || "",
-                bank_routing: data[`Bank Routing Number ${index}`] || "",
-                bank_account_number: data[`Bank Account Number ${index}`] || "",
-                bank_account_type: data[`Bank Account Type ${index}`] || "",
-                employer_name: data[`Employer Name ${index}`] || "",
-                debtor_person_id: data[`Debtor Person ID ${index}`] || "",
+                bank_name: data[`Bank Name ${accountIndex}`] || "",
+                bank_address: data[`Bank Address Line ${accountIndex}`] || "",
+                bank_city: data[`Bank City ${accountIndex}`] || "",
+                bank_state: data[`Bank State ${accountIndex}`] || "",
+                bank_zip: data[`Bank Zip Code ${accountIndex}`] || "",
+                bank_routing: data[`Bank Routing Number ${accountIndex}`] || "",
+                bank_account_number:
+                  data[`Bank Account Number ${accountIndex}`] || "",
+                bank_account_type:
+                  data[`Bank Account Type ${accountIndex}`] || "",
+                employer_name: data[`Employer Name ${accountIndex}`] || "",
+                debtor_person_id:
+                  data[`Debtor Person ID ${accountIndex}`] || "",
                 debtor_drivers_license:
-                  data[`Debtor Driver's License ${index}`] ||
-                  data[`Debtor Driver\u2019s License ${index}`] ||
+                  data[`Debtor Driver's License ${accountIndex}`] ||
+                  data[`Debtor Driver\u2019s License ${accountIndex}`] ||
                   "",
                 debtor_ssn:
-                  data[`Debtor Social Security Number ${index}`] || "",
+                  data[`Debtor Social Security Number ${accountIndex}`] || "",
                 debtor_credit_score: validateAndSanitizeNumber(
-                  data[`Debtor Credit Score ${index}`] || 0
+                  data[`Debtor Credit Score ${accountIndex}`] || 0
                 ),
+                has_dispute: data[`Has Dispute ${accountIndex}`] || false,
               };
 
-              // Check if this specific account exists
-              const [existingAccount] = await db.query(
-                "SELECT * FROM accounts WHERE contact_id = ? AND account_id = ?",
-                [contactData.contact_id, accountID]
-              );
+              if (existingAccounts.length > 0) {
+                // UPDATE existing account
+                const updateQuery = `
+                  UPDATE accounts SET
+                    account_id = ?,
+                    date_first_default = ?,
+                    date_origination = ?,
+                    issuer = ?,
+                    issuer_account_id = ?,
+                    package = ?,
+                    alternate_id = ?,
+                    state_of_origin = ?,
+                    date_charged_off = ?,
+                    current_interest_due = ?,
+                    fees = ?,
+                    amount_financed = ?,
+                    principal = ?,
+                    balance = ?,
+                    placement_package = ?,
+                    last_payment_at_purchase = ?,
+                    date_last_payment_at_purchase = ?,
+                    last_payment_amount = ?,
+                    date_last_payment = ?,
+                    bank_name = ?,
+                    bank_address = ?,
+                    bank_city = ?,
+                    bank_state = ?,
+                    bank_zip = ?,
+                    bank_routing = ?,
+                    bank_account_number = ?,
+                    bank_account_type = ?,
+                    employer_name = ?,
+                    debtor_person_id = ?,
+                    debtor_drivers_license = ?,
+                    debtor_ssn = ?,
+                    debtor_credit_score = ?,
+                    has_dispute = ?
+                  WHERE contact_id = ? AND account_index = ?
+                `;
 
-              if (existingAccount.length > 0) {
-                // Update existing account
-                await db.query(
-                  `UPDATE accounts SET 
-                    account_related_id = ?, date_first_default = ?, date_origination = ?, 
-                    issuer = ?, issuer_account_id = ?, package = ?, alternate_id = ?, 
-                    state_of_origin = ?, date_charged_off = ?, current_interest_due = ?, 
-                    fees = ?, amount_financed = ?, principal = ?, balance = ?, 
-                    placement_package = ?, last_payment_at_purchase = ?, 
-                    date_last_payment_at_purchase = ?, last_payment_amount = ?, 
-                    date_last_payment = ?, bank_name = ?, bank_address = ?, 
-                    bank_city = ?, bank_state = ?, bank_zip = ?, bank_routing = ?, 
-                    bank_account_number = ?, bank_account_type = ?, employer_name = ?, 
-                    debtor_person_id = ?, debtor_drivers_license = ?, debtor_ssn = ?, 
-                    debtor_credit_score = ?
-                  WHERE contact_id = ? AND account_id = ?`,
-                  [
-                    accountData.account_related_id,
-                    accountData.date_first_default,
-                    accountData.date_origination,
-                    accountData.issuer,
-                    accountData.issuer_account_id,
-                    accountData.package,
-                    accountData.alternate_id,
-                    accountData.state_of_origin,
-                    accountData.date_charged_off,
-                    accountData.current_interest_due,
-                    accountData.fees,
-                    accountData.amount_financed,
-                    accountData.principal,
-                    accountData.balance,
-                    accountData.placement_package,
-                    accountData.last_payment_at_purchase,
-                    accountData.date_last_payment_at_purchase,
-                    accountData.last_payment_amount,
-                    accountData.date_last_payment,
-                    accountData.bank_name,
-                    accountData.bank_address,
-                    accountData.bank_city,
-                    accountData.bank_state,
-                    accountData.bank_zip,
-                    accountData.bank_routing,
-                    accountData.bank_account_number,
-                    accountData.bank_account_type,
-                    accountData.employer_name,
-                    accountData.debtor_person_id,
-                    accountData.debtor_drivers_license,
-                    accountData.debtor_ssn,
-                    accountData.debtor_credit_score,
-                    contactData.contact_id,
-                    accountID,
-                  ]
+                const updateParams = [
+                  accountData.account_id,
+                  accountData.date_first_default,
+                  accountData.date_origination,
+                  accountData.issuer,
+                  accountData.issuer_account_id,
+                  accountData.package,
+                  accountData.alternate_id,
+                  accountData.state_of_origin,
+                  accountData.date_charged_off,
+                  accountData.current_interest_due,
+                  accountData.fees,
+                  accountData.amount_financed,
+                  accountData.principal,
+                  accountData.balance,
+                  accountData.placement_package,
+                  accountData.last_payment_at_purchase,
+                  accountData.date_last_payment_at_purchase,
+                  accountData.last_payment_amount,
+                  accountData.date_last_payment,
+                  accountData.bank_name,
+                  accountData.bank_address,
+                  accountData.bank_city,
+                  accountData.bank_state,
+                  accountData.bank_zip,
+                  accountData.bank_routing,
+                  accountData.bank_account_number,
+                  accountData.bank_account_type,
+                  accountData.employer_name,
+                  accountData.debtor_person_id,
+                  accountData.debtor_drivers_license,
+                  accountData.debtor_ssn,
+                  accountData.debtor_credit_score,
+                  accountData.has_dispute,
+                  contactData.contact_id,
+                  accountIndex,
+                ];
+
+                const [updateResult] = await db.query(
+                  updateQuery,
+                  updateParams
                 );
-                console.log(
-                  `Updated account ${accountID} (related_id: ${accountRelatedId}) for contact ${contactData.contact_id}`
-                );
+
+                if (updateResult.affectedRows === 0) {
+                  console.error(
+                    `Failed to update account ${accountID} (index ${accountIndex}) for contact ${contactData.contact_id}`
+                  );
+                } else {
+                  console.log(
+                    `Successfully updated account ${accountID} (index ${accountIndex}) for contact ${contactData.contact_id}`
+                  );
+                }
               } else {
-                // Insert new account
-                await db.query(
-                  `INSERT INTO accounts (
-                    contact_id, account_related_id, account_id, date_first_default, date_origination, 
-                    issuer, issuer_account_id, package, alternate_id, state_of_origin, date_charged_off, 
-                    current_interest_due, fees, amount_financed, principal, balance, placement_package, 
-                    last_payment_at_purchase, date_last_payment_at_purchase, last_payment_amount, 
-                    date_last_payment, bank_name, bank_address, bank_city, bank_state, bank_zip, 
-                    bank_routing, bank_account_number, bank_account_type, employer_name, debtor_person_id, 
-                    debtor_drivers_license, debtor_ssn, debtor_credit_score
-                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                  Object.values(accountData)
-                );
-                console.log(
-                  `Created new account ${accountID} (related_id: ${accountRelatedId}) for contact ${contactData.contact_id}`
-                );
+                // INSERT new account
+                const insertQuery = `
+                  INSERT INTO accounts (
+                    account_id, contact_id, account_index, date_first_default, date_origination,
+                    issuer, issuer_account_id, package, alternate_id, state_of_origin, date_charged_off,
+                    current_interest_due, fees, amount_financed, principal, balance, placement_package,
+                    last_payment_at_purchase, date_last_payment_at_purchase, last_payment_amount,
+                    date_last_payment, bank_name, bank_address, bank_city, bank_state, bank_zip,
+                    bank_routing, bank_account_number, bank_account_type, employer_name, debtor_person_id,
+                    debtor_drivers_license, debtor_ssn, debtor_credit_score, has_dispute
+                  ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                  )
+                `;
+
+                try {
+                  const [insertResult] = await db.query(
+                    insertQuery,
+                    Object.values(accountData)
+                  );
+
+                  if (insertResult.affectedRows === 1) {
+                    console.log(
+                      `Successfully inserted new account ${accountID} (index ${accountIndex}) for contact ${contactData.contact_id}`
+                    );
+                  } else {
+                    console.error(
+                      `Failed to insert account ${accountID} (index ${accountIndex}) for contact ${contactData.contact_id}`
+                    );
+                  }
+                } catch (error) {
+                  if (error.code === "ER_DUP_ENTRY") {
+                    console.error(
+                      `Duplicate entry detected for contact_id ${contactData.contact_id} and account_index ${accountIndex}. Attempting update instead.`
+                    );
+                    // Retry as update
+                    const [updateResult] = await db.query(
+                      updateQuery,
+                      updateParams
+                    );
+                    console.log(
+                      `Retried as update - affected rows: ${updateResult.affectedRows}`
+                    );
+                  } else {
+                    throw error;
+                  }
+                }
               }
             }
           }
