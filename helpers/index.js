@@ -16,4 +16,11 @@ function decryptSSN(encryptedSSN) {
   );
   return decrypted.toString(CryptoJS.enc.Utf8);
 }
-module.exports = { encryptSSN, decryptSSN };
+function encryptPayload(payload, secretKey) {
+  const ciphertext = CryptoJS.AES.encrypt(
+    JSON.stringify(payload),
+    secretKey
+  ).toString();
+  return ciphertext;
+}
+module.exports = { encryptSSN, decryptSSN, encryptPayload };
