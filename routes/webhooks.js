@@ -197,6 +197,7 @@ router.post("/", async (req, res) => {
             const accountID = data[`Account ID ${index}`];
 
             if (accountID) {
+              console.log(accountID, "is present ");
               const accountData = {
                 contact_id: contactData.contact_id,
                 account_related_id: accountRelatedIndex++, // Add unique index 1, 2, 3, ...
@@ -266,11 +267,12 @@ router.post("/", async (req, res) => {
 
               if (existingContact.length > 0) {
                 const [existingAccount] = await db.query(
-                  "SELECT * FROM accounts WHERE account_id = ? AND contact_id = ?",
-                  [accountID, contactData.contact_id]
+                  "SELECT * FROM accounts WHERE contact_id = ? AND account_related_id = ?",
+                  [contactData.contact_id, accountData.account_related_id]
                 );
-
+                console.log("is existing contact ");
                 if (existingAccount.length > 0) {
+                  console.log("is existing account");
                   await db.query(
                     `UPDATE accounts 
                      SET date_first_default = ?, date_origination = ?, issuer = ?, issuer_account_id = ?, 
