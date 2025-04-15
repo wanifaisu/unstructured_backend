@@ -23,4 +23,5 @@ function encryptPayload(payload, secretKey) {
   ).toString();
   return ciphertext;
 }
+
 module.exports = { encryptSSN, decryptSSN, encryptPayload };

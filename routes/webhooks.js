@@ -186,6 +186,8 @@ router.post("/", async (req, res) => {
         }
 
         // Process account-related fields
+        let accountRelatedIndex = 1; // Start indexing from 1
+
         for (const key in data) {
           const match = key.match(/^Account ID (\d+)$/);
 
@@ -196,6 +198,7 @@ router.post("/", async (req, res) => {
             if (accountID) {
               const accountData = {
                 contact_id: contactData.contact_id,
+                account_related_id: accountRelatedIndex++, // Add unique index 1, 2, 3, ...
                 account_id: accountID,
                 date_first_default: validateAndFormatDate(
                   data[`Date of First Default ${index}`]
@@ -254,23 +257,21 @@ router.post("/", async (req, res) => {
                 ),
               };
 
-              // 1. Check if the contact exists
+              // Check if contact exists
               const [existingContact] = await db.query(
                 "SELECT * FROM accounts WHERE contact_id = ?",
                 [contactData.contact_id]
               );
 
               if (existingContact.length > 0) {
-                // 2. If contact exists, now check if the account_id matches for this contact
                 const [existingAccount] = await db.query(
                   "SELECT * FROM accounts WHERE account_id = ? AND contact_id = ?",
                   [accountID, contactData.contact_id]
                 );
 
                 if (existingAccount.length > 0) {
-                  // 3. Account exists for this contact, update the existing account
                   logger.info(
-                    `Account with Account ID ${accountID} and Contact ID ${contactData.contact_id} exists, updating...`
+                    `Account ID ${accountID} exists for Contact ID ${contactData.contact_id}, updating...`
                   );
                   await db.query(
                     `UPDATE accounts 
@@ -281,7 +282,7 @@ router.post("/", async (req, res) => {
                          last_payment_amount = ?, date_last_payment = ?, bank_name = ?, bank_address = ?, 
                          bank_city = ?, bank_state = ?, bank_zip = ?, bank_routing = ?, bank_account_number = ?, 
                          bank_account_type = ?, employer_name = ?, debtor_person_id = ?, debtor_drivers_license = ?, 
-                         debtor_ssn = ?, debtor_credit_score = ?
+                         debtor_ssn = ?, debtor_credit_score = ?, account_related_id = ?
                      WHERE account_id = ? AND contact_id = ?`,
                     [
                       ...Object.values(accountData),
@@ -290,36 +291,34 @@ router.post("/", async (req, res) => {
                     ]
                   );
                 } else {
-                  // 4. Account doesn't exist for this contact, insert new account for the same contact
                   logger.info(
-                    `Account with Account ID ${accountID} does not exist for Contact ID ${contactData.contact_id}, inserting new account...`
+                    `Account ID ${accountID} does not exist, inserting for Contact ID ${contactData.contact_id}...`
                   );
                   await db.query(
                     `INSERT INTO accounts (
-                      contact_id, account_id, date_first_default, date_origination, issuer, issuer_account_id, package, 
-                      alternate_id, state_of_origin, date_charged_off, current_interest_due, fees, amount_financed, 
-                      principal, balance, placement_package, last_payment_at_purchase, date_last_payment_at_purchase, 
-                      last_payment_amount, date_last_payment, bank_name, bank_address, bank_city, bank_state, bank_zip, 
-                      bank_routing, bank_account_number, bank_account_type, employer_name, debtor_person_id, 
-                      debtor_drivers_license, debtor_ssn, debtor_credit_score
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                      contact_id, account_related_id, account_id, date_first_default, date_origination, issuer, 
+                      issuer_account_id, package, alternate_id, state_of_origin, date_charged_off, current_interest_due, 
+                      fees, amount_financed, principal, balance, placement_package, last_payment_at_purchase, 
+                      date_last_payment_at_purchase, last_payment_amount, date_last_payment, bank_name, bank_address, 
+                      bank_city, bank_state, bank_zip, bank_routing, bank_account_number, bank_account_type, 
+                      employer_name, debtor_person_id, debtor_drivers_license, debtor_ssn, debtor_credit_score
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     Object.values(accountData)
                   );
                 }
               } else {
-                // 5. No contact found, insert a new account with the contact_id and account_id
                 logger.info(
-                  `No contact found with Contact ID ${contactData.contact_id}, inserting new contact and account...`
+                  `No contact found for Contact ID ${contactData.contact_id}, inserting contact and account...`
                 );
                 await db.query(
                   `INSERT INTO accounts (
-                    contact_id, account_id, date_first_default, date_origination, issuer, issuer_account_id, package, 
-                    alternate_id, state_of_origin, date_charged_off, current_interest_due, fees, amount_financed, 
-                    principal, balance, placement_package, last_payment_at_purchase, date_last_payment_at_purchase, 
-                    last_payment_amount, date_last_payment, bank_name, bank_address, bank_city, bank_state, bank_zip, 
-                    bank_routing, bank_account_number, bank_account_type, employer_name, debtor_person_id, 
-                    debtor_drivers_license, debtor_ssn, debtor_credit_score
-                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    contact_id, account_related_id, account_id, date_first_default, date_origination, issuer, 
+                    issuer_account_id, package, alternate_id, state_of_origin, date_charged_off, current_interest_due, 
+                    fees, amount_financed, principal, balance, placement_package, last_payment_at_purchase, 
+                    date_last_payment_at_purchase, last_payment_amount, date_last_payment, bank_name, bank_address, 
+                    bank_city, bank_state, bank_zip, bank_routing, bank_account_number, bank_account_type, 
+                    employer_name, debtor_person_id, debtor_drivers_license, debtor_ssn, debtor_credit_score
+                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                   Object.values(accountData)
                 );
               }
@@ -331,13 +330,13 @@ router.post("/", async (req, res) => {
         for (const key in data) {
           const match = key.match(/^Lender (\d+)$/); // Regex to capture offer index
           if (match) {
-            const index = match[1]; // Extract the number (1, 2, 3, ...)
-            const lender = data[`Lender ${index}`];
+            const index = match[1]; // This is your account_index (1, 2, 3, ...)
 
+            const lender = data[`Lender ${index}`];
             if (lender) {
               const offerData = {
                 contact_id: contactData.contact_id,
-                account_related_id: index, // Add account_related_id (e.g., 1, 2, 3, ...)
+                account_index: index, // Renamed from account_related_id
                 lender: lender,
                 total_debt_amount: validateAndSanitizeNumber(
                   data[`Total Debt Amount ${index}`]
@@ -350,21 +349,20 @@ router.post("/", async (req, res) => {
                 ),
               };
 
-              // 1. Check if the contact exists
+              // Check if contact exists in Offers
               const [existingContact] = await db.query(
-                "SELECT * FROM accounts WHERE contact_id = ?",
+                "SELECT * FROM Offers WHERE contact_id = ?",
                 [contactData.contact_id]
               );
 
               if (existingContact.length > 0) {
-                // 2. If contact exists, now check if the offer (account_related_id) exists for this contact
                 const [existingOffer] = await db.query(
-                  "SELECT * FROM Offers WHERE contact_id = ? AND account_related_id = ?",
+                  "SELECT * FROM Offers WHERE contact_id = ? AND account_index = ?",
                   [contactData.contact_id, index]
                 );
 
                 if (existingOffer.length > 0) {
-                  // 3. Offer exists for this contact, update the existing offer
+                  // Update existing offer
                   await db.query(
                     `UPDATE Offers 
                      SET 
@@ -372,30 +370,30 @@ router.post("/", async (req, res) => {
                        total_debt_amount = ?, 
                        settlement_amount = ?, 
                        settlement_percentage = ? 
-                     WHERE contact_id = ? AND account_related_id = ?`,
+                     WHERE contact_id = ? AND account_index = ?`,
                     [
                       offerData.lender,
                       offerData.total_debt_amount,
                       offerData.settlement_amount,
                       offerData.settlement_percentage,
                       contactData.contact_id,
-                      index, // Use account_related_id for the WHERE clause
+                      index,
                     ]
                   );
                 } else {
-                  // 4. Offer does not exist for this contact, insert a new offer for the same contact
+                  // Insert new offer for existing contact
                   await db.query(
                     `INSERT INTO Offers (
-                       contact_id, 
-                       account_related_id, 
-                       lender, 
-                       total_debt_amount, 
-                       settlement_amount, 
-                       settlement_percentage
-                     ) VALUES (?, ?, ?, ?, ?, ?)`,
+                      contact_id, 
+                      account_index, 
+                      lender, 
+                      total_debt_amount, 
+                      settlement_amount, 
+                      settlement_percentage
+                    ) VALUES (?, ?, ?, ?, ?, ?)`,
                     [
                       offerData.contact_id,
-                      offerData.account_related_id,
+                      offerData.account_index,
                       offerData.lender,
                       offerData.total_debt_amount,
                       offerData.settlement_amount,
@@ -404,11 +402,11 @@ router.post("/", async (req, res) => {
                   );
                 }
               } else {
-                // 5. No contact found, insert new offer with the contact_id and account_related_id
+                // Insert offer for new contact
                 await db.query(
                   `INSERT INTO Offers (
                     contact_id, 
-                    account_related_id, 
+                    account_index, 
                     lender, 
                     total_debt_amount, 
                     settlement_amount, 
@@ -416,7 +414,7 @@ router.post("/", async (req, res) => {
                   ) VALUES (?, ?, ?, ?, ?, ?)`,
                   [
                     offerData.contact_id,
-                    offerData.account_related_id,
+                    offerData.account_index,
                     offerData.lender,
                     offerData.total_debt_amount,
                     offerData.settlement_amount,
