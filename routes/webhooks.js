@@ -145,16 +145,31 @@ router.post("/", async (req, res) => {
           const match = key.match(/^Account ID (\d+)$/);
           if (match) {
             const index = match[1];
-            const accountID = data[`Account ID ${index}`];
+            // Check both direct property and customData for account ID
+            const accountID =
+              data[`Account ID ${index}`] ||
+              (data.customData && data.customData[`Account ID ${index}`]);
 
             if (accountID) {
               console.log(
                 `Processing account ${accountID} for contact ${contactData.contact_id}`
               );
 
+              // First check if we already have an account_related_id for this account
+              const [existingAccountRelation] = await db.query(
+                "SELECT account_related_id FROM accounts WHERE contact_id = ? AND account_id = ?",
+                [contactData.contact_id, accountID]
+              );
+
+              // Use existing account_related_id if found, otherwise use the next index
+              const accountRelatedId =
+                existingAccountRelation.length > 0
+                  ? existingAccountRelation[0].account_related_id
+                  : accountRelatedIndex++;
+
               const accountData = {
                 contact_id: contactData.contact_id,
-                account_related_id: accountRelatedIndex++,
+                account_related_id: accountRelatedId,
                 account_id: accountID,
                 date_first_default: validateAndFormatDate(
                   data[`Date of First Default ${index}`]
@@ -171,25 +186,27 @@ router.post("/", async (req, res) => {
                   data[`Date Charged Off ${index}`]
                 ),
                 current_interest_due: validateAndSanitizeNumber(
-                  data[`Current Interest Due ${index}`]
+                  data[`Current Interest Due ${index}`] || 0
                 ),
-                fees: validateAndSanitizeNumber(data[`Fees ${index}`]),
+                fees: validateAndSanitizeNumber(data[`Fees ${index}`] || 0),
                 amount_financed: validateAndSanitizeNumber(
-                  data[`Amount Financed ${index}`]
+                  data[`Amount Financed ${index}`] || 0
                 ),
                 principal: validateAndSanitizeNumber(
-                  data[`Principal ${index}`]
+                  data[`Principal ${index}`] || 0
                 ),
-                balance: validateAndSanitizeNumber(data[`Balance ${index}`]),
+                balance: validateAndSanitizeNumber(
+                  data[`Balance ${index}`] || 0
+                ),
                 placement_package: data[`Placement Package ${index}`] || "",
                 last_payment_at_purchase: validateAndSanitizeNumber(
-                  data[`Amount of Last Payment at Purchase ${index}`]
+                  data[`Amount of Last Payment at Purchase ${index}`] || 0
                 ),
                 date_last_payment_at_purchase: validateAndFormatDate(
                   data[`Date of Last Payment at Purchase ${index}`]
                 ),
                 last_payment_amount: validateAndSanitizeNumber(
-                  data[`Amount of Last Payment ${index}`]
+                  data[`Amount of Last Payment ${index}`] || 0
                 ),
                 date_last_payment: validateAndFormatDate(
                   data[`Date of Last Payment ${index}`]
@@ -205,11 +222,13 @@ router.post("/", async (req, res) => {
                 employer_name: data[`Employer Name ${index}`] || "",
                 debtor_person_id: data[`Debtor Person ID ${index}`] || "",
                 debtor_drivers_license:
-                  data[`Debtor Driver's License ${index}`] || "",
+                  data[`Debtor Driver's License ${index}`] ||
+                  data[`Debtor Driver\u2019s License ${index}`] ||
+                  "",
                 debtor_ssn:
                   data[`Debtor Social Security Number ${index}`] || "",
                 debtor_credit_score: validateAndSanitizeNumber(
-                  data[`Debtor Credit Score ${index}`]
+                  data[`Debtor Credit Score ${index}`] || 0
                 ),
               };
 
@@ -273,7 +292,7 @@ router.post("/", async (req, res) => {
                   ]
                 );
                 console.log(
-                  `Updated account ${accountID} for contact ${contactData.contact_id}`
+                  `Updated account ${accountID} (related_id: ${accountRelatedId}) for contact ${contactData.contact_id}`
                 );
               } else {
                 // Insert new account
@@ -290,13 +309,12 @@ router.post("/", async (req, res) => {
                   Object.values(accountData)
                 );
                 console.log(
-                  `Created new account ${accountID} for contact ${contactData.contact_id}`
+                  `Created new account ${accountID} (related_id: ${accountRelatedId}) for contact ${contactData.contact_id}`
                 );
               }
             }
           }
         }
-
         // Process offer-related fields
         for (const key in data) {
           const match = key.match(/^Lender (\d+)$/);
