@@ -2,7 +2,7 @@ const express = require("express");
 const db = require("../db"); // Import MySQL connection
 const bcrypt = require("bcrypt"); // For hashing SSNs
 const moment = require("moment");
-const { encryptSSN } = require("../helpers");
+const { encryptPayload } = require("../helpers");
 const router = express.Router();
 
 // Helper function to validate and format dates
@@ -29,11 +29,12 @@ router.post("/", async (req, res) => {
     const contacts = Array.isArray(req.body) ? req.body : [req.body];
     const payload = req.body;
     console.log("Webhook Payload:", JSON.stringify(payload, null, 2));
-    logger.info("Webhook Payload: " + JSON.stringify(payload, null, 2));
     for (let data of contacts) {
       const rawSSN = data["Social Security Number"];
       let hashedSSN = "";
       let ssnLastFourHash = "";
+
+      // Hash SSN if it exists
       if (rawSSN) {
         hashedSSN = await encryptPayload(
           rawSSN,
@@ -46,6 +47,7 @@ router.post("/", async (req, res) => {
         );
       }
 
+      // Prepare contact data
       const contactData = {
         contact_id: data.contact_id || "",
         locationId: data.locationId || "",
@@ -67,14 +69,14 @@ router.post("/", async (req, res) => {
           "YYYY-MM-DD HH:mm:ss"
         ),
         dateUpdated: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-        dateOfBirth: validateAndFormatDate(data.date_of_birth),
-        tags: JSON.stringify(data.tags || []),
+        dateOfBirth: validateAndFormatDate(data.date_of_birth), // Validate and format date
+        tags: JSON.stringify(data.tags || []), // Store tags as JSON
         country: data.country || "",
         website: data.website || "",
         timezone: data.timezone || "",
         ssn: hashedSSN || "",
         hashedFour: ssnLastFourHash || "",
-        customField: JSON.stringify(data.customField || {}),
+        customField: JSON.stringify(data.customField || {}), // Store customField as JSON
       };
       try {
         // Check if contact already exists
@@ -82,12 +84,7 @@ router.post("/", async (req, res) => {
           "SELECT * FROM contacts WHERE email = ?",
           [contactData.email]
         );
-        // const result = await pdcflow.main({
-        //   firstName: contactData.firstName,
-        //   lastName: contactData.lastName,
-        //   email: contactData.email,
-        //   phone: contactData.phone,
-        // });
+
         if (existingContact.length > 0) {
           // Update existing contact
           await db.query(
