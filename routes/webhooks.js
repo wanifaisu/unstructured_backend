@@ -29,20 +29,23 @@ router.post("/", async (req, res) => {
     const contacts = Array.isArray(req.body) ? req.body : [req.body];
     const payload = req.body;
     console.log("Webhook Payload:", JSON.stringify(payload, null, 2));
+    logger.info("Webhook Payload: " + JSON.stringify(payload, null, 2));
     for (let data of contacts) {
-      const rawSSN = data["Social security Number"];
+      const rawSSN = data["Social Security Number"];
       let hashedSSN = "";
       let ssnLastFourHash = "";
-
-      // Hash SSN if it exists
       if (rawSSN) {
-        const salt = await bcrypt.genSalt(10);
-        hashedSSN = await bcrypt.hash(rawSSN.toString(), salt);
+        hashedSSN = await encryptPayload(
+          rawSSN,
+          process.env.PUBLIC_KEY_ENCREPT
+        );
         const lastFourSSN = rawSSN.toString().slice(-4);
-        ssnLastFourHash = await encryptSSN(lastFourSSN);
+        ssnLastFourHash = await encryptPayload(
+          lastFourSSN,
+          process.env.PUBLIC_KEY_ENCREPT
+        );
       }
 
-      // Prepare contact data
       const contactData = {
         contact_id: data.contact_id || "",
         locationId: data.locationId || "",
@@ -64,14 +67,14 @@ router.post("/", async (req, res) => {
           "YYYY-MM-DD HH:mm:ss"
         ),
         dateUpdated: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-        dateOfBirth: validateAndFormatDate(data.date_of_birth), // Validate and format date
-        tags: JSON.stringify(data.tags || []), // Store tags as JSON
+        dateOfBirth: validateAndFormatDate(data.date_of_birth),
+        tags: JSON.stringify(data.tags || []),
         country: data.country || "",
         website: data.website || "",
         timezone: data.timezone || "",
         ssn: hashedSSN || "",
         hashedFour: ssnLastFourHash || "",
-        customField: JSON.stringify(data.customField || {}), // Store customField as JSON
+        customField: JSON.stringify(data.customField || {}),
       };
       try {
         // Check if contact already exists
@@ -79,7 +82,12 @@ router.post("/", async (req, res) => {
           "SELECT * FROM contacts WHERE email = ?",
           [contactData.email]
         );
-
+        // const result = await pdcflow.main({
+        //   firstName: contactData.firstName,
+        //   lastName: contactData.lastName,
+        //   email: contactData.email,
+        //   phone: contactData.phone,
+        // });
         if (existingContact.length > 0) {
           // Update existing contact
           await db.query(
