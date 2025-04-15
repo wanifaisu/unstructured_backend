@@ -1,46 +1,48 @@
 const express = require("express");
 const db = require("../db"); // Import MySQL connection
+const bcrypt = require("bcrypt"); // For hashing SSNs
 const moment = require("moment");
-require("dotenv").config();
-const { encryptPayload } = require("../helpers");
-// const pdcflow = require("../paymentSignature");
+const { encryptSSN } = require("../helpers");
 const router = express.Router();
 
+// Helper function to validate and format dates
 const validateAndFormatDate = (dateValue) => {
-  if (!dateValue) return null;
-  const date = moment(dateValue, moment.ISO_8601, true);
-  return date.isValid() ? date.format("YYYY-MM-DD") : null;
-};
-const validateAndSanitizeNumber = (value) => {
-  if (typeof value === "number") return value;
-  if (typeof value === "string") {
-    const sanitizedValue = value.replace(/[^0-9.]/g, "");
-    return sanitizedValue ? parseFloat(sanitizedValue) : 0;
-  }
-  return 0;
+  if (!dateValue) return null; // If the value is missing, return null
+  const date = moment(dateValue, moment.ISO_8601, true); // Parse the date strictly
+  return date.isValid() ? date.format("YYYY-MM-DD") : null; // Return formatted date or null if invalid
 };
 
+// Helper function to validate and sanitize numeric values
+const validateAndSanitizeNumber = (value) => {
+  if (typeof value === "number") return value; // If it's already a number, return it
+  if (typeof value === "string") {
+    // Remove non-numeric characters (e.g., letters, symbols)
+    const sanitizedValue = value.replace(/[^0-9.]/g, "");
+    return sanitizedValue ? parseFloat(sanitizedValue) : 0; // Convert to number or return 0 if empty
+  }
+  return 0; // Default to 0 for invalid types
+};
+
+// Webhook endpoint for GHL
 router.post("/", async (req, res) => {
   try {
     const contacts = Array.isArray(req.body) ? req.body : [req.body];
     const payload = req.body;
     console.log("Webhook Payload:", JSON.stringify(payload, null, 2));
     for (let data of contacts) {
-      const rawSSN = data["Social Security Number"];
+      const rawSSN = data["Social security Number"];
       let hashedSSN = "";
       let ssnLastFourHash = "";
+
+      // Hash SSN if it exists
       if (rawSSN) {
-        hashedSSN = await encryptPayload(
-          rawSSN,
-          process.env.PUBLIC_KEY_ENCREPT
-        );
+        const salt = await bcrypt.genSalt(10);
+        hashedSSN = await bcrypt.hash(rawSSN.toString(), salt);
         const lastFourSSN = rawSSN.toString().slice(-4);
-        ssnLastFourHash = await encryptPayload(
-          lastFourSSN,
-          process.env.PUBLIC_KEY_ENCREPT
-        );
+        ssnLastFourHash = await encryptSSN(lastFourSSN);
       }
 
+      // Prepare contact data
       const contactData = {
         contact_id: data.contact_id || "",
         locationId: data.locationId || "",
@@ -62,15 +64,14 @@ router.post("/", async (req, res) => {
           "YYYY-MM-DD HH:mm:ss"
         ),
         dateUpdated: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-        dateOfBirth: validateAndFormatDate(data.date_of_birth),
-        tags: JSON.stringify(data.tags || []),
+        dateOfBirth: validateAndFormatDate(data.date_of_birth), // Validate and format date
+        tags: JSON.stringify(data.tags || []), // Store tags as JSON
         country: data.country || "",
         website: data.website || "",
         timezone: data.timezone || "",
         ssn: hashedSSN || "",
         hashedFour: ssnLastFourHash || "",
-        customField: {},
-        // JSON.stringify(data.customField || {})
+        customField: JSON.stringify(data.customField || {}), // Store customField as JSON
       };
       try {
         // Check if contact already exists
@@ -78,12 +79,7 @@ router.post("/", async (req, res) => {
           "SELECT * FROM contacts WHERE email = ?",
           [contactData.email]
         );
-        // const result = await pdcflow.main({
-        //   firstName: contactData.firstName,
-        //   lastName: contactData.lastName,
-        //   email: contactData.email,
-        //   phone: contactData.phone,
-        // });
+
         if (existingContact.length > 0) {
           // Update existing contact
           await db.query(
@@ -324,13 +320,13 @@ router.post("/", async (req, res) => {
         for (const key in data) {
           const match = key.match(/^Lender (\d+)$/); // Regex to capture offer index
           if (match) {
-            const index = match[1]; // This is your account_index (1, 2, 3, ...)
-
+            const index = match[1]; // Extract the number (1, 2, 3, ...)
             const lender = data[`Lender ${index}`];
+
             if (lender) {
               const offerData = {
                 contact_id: contactData.contact_id,
-                account_index: index, // Renamed from account_related_id
+                account_related_id: index, // Add account_related_id (e.g., 1, 2, 3, ...)
                 lender: lender,
                 total_debt_amount: validateAndSanitizeNumber(
                   data[`Total Debt Amount ${index}`]
@@ -343,72 +339,45 @@ router.post("/", async (req, res) => {
                 ),
               };
 
-              // Check if contact exists in Offers
-              const [existingContact] = await db.query(
-                "SELECT * FROM Offers WHERE contact_id = ?",
-                [contactData.contact_id]
+              // Check if offer already exists
+              const [existingOffer] = await db.query(
+                "SELECT * FROM Offers WHERE contact_id = ? AND account_related_id = ?",
+                [contactData.contact_id, index]
               );
 
-              if (existingContact.length > 0) {
-                const [existingOffer] = await db.query(
-                  "SELECT * FROM Offers WHERE contact_id = ? AND account_index = ?",
-                  [contactData.contact_id, index]
+              if (existingOffer.length > 0) {
+                // Update existing offer
+                await db.query(
+                  `UPDATE Offers 
+                   SET 
+                     lender = ?, 
+                     total_debt_amount = ?, 
+                     settlement_amount = ?, 
+                     settlement_percentage = ?
+                   WHERE contact_id = ? AND account_related_id = ?`,
+                  [
+                    offerData.lender,
+                    offerData.total_debt_amount,
+                    offerData.settlement_amount,
+                    offerData.settlement_percentage,
+                    contactData.contact_id,
+                    index, // Use account_related_id for the WHERE clause
+                  ]
                 );
-
-                if (existingOffer.length > 0) {
-                  // Update existing offer
-                  await db.query(
-                    `UPDATE Offers 
-                     SET 
-                       lender = ?, 
-                       total_debt_amount = ?, 
-                       settlement_amount = ?, 
-                       settlement_percentage = ? 
-                     WHERE contact_id = ? AND account_index = ?`,
-                    [
-                      offerData.lender,
-                      offerData.total_debt_amount,
-                      offerData.settlement_amount,
-                      offerData.settlement_percentage,
-                      contactData.contact_id,
-                      index,
-                    ]
-                  );
-                } else {
-                  // Insert new offer for existing contact
-                  await db.query(
-                    `INSERT INTO Offers (
-                      contact_id, 
-                      account_index, 
-                      lender, 
-                      total_debt_amount, 
-                      settlement_amount, 
-                      settlement_percentage
-                    ) VALUES (?, ?, ?, ?, ?, ?)`,
-                    [
-                      offerData.contact_id,
-                      offerData.account_index,
-                      offerData.lender,
-                      offerData.total_debt_amount,
-                      offerData.settlement_amount,
-                      offerData.settlement_percentage,
-                    ]
-                  );
-                }
               } else {
-                // Insert offer for new contact
+                // Insert new offer
                 await db.query(
                   `INSERT INTO Offers (
-                    contact_id, 
-                    account_index, 
-                    lender, 
-                    total_debt_amount, 
-                    settlement_amount, 
-                    settlement_percentage
-                  ) VALUES (?, ?, ?, ?, ?, ?)`,
+                     contact_id, 
+                     account_related_id, 
+                     lender, 
+                     total_debt_amount, 
+                     settlement_amount, 
+                     settlement_percentage
+                   ) VALUES (?, ?, ?, ?, ?, ?)`,
                   [
                     offerData.contact_id,
-                    offerData.account_index,
+                    offerData.account_related_id,
                     offerData.lender,
                     offerData.total_debt_amount,
                     offerData.settlement_amount,
